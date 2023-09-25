@@ -7,6 +7,8 @@ marshmallow
 sqlalchemy
 passlib
 flask-migrate
+gunicorn
+psycopg2
 
 
 
