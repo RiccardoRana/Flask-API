@@ -4,5 +4,5 @@
 
 
 ...
-docker run -dp 5000:5000 -w /app -v "$(pwd):/app" flask-rest-api-python sh -c "flask run"
+docker run -dp 5000:5000 -w /app -v "$(pwd):/app" flask-rest-api-python sh -c "flask run --host 0.0.0.0"
 ...

@@ -41,6 +41,9 @@ class UserSchema(Schema):
     username=fields.Str(required=True)
     password=fields.Str(required=True, load_only=True) # You never want to return the user's password!
     
+
+class UserRegisterSchema(UserSchema):  
+    email = fields.Str(required=True)
     
     
 

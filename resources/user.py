@@ -1,5 +1,6 @@
 import requests
 import os
+from sqlalchemy import or_
 from dotenv import load_dotenv
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
@@ -14,7 +15,7 @@ from models.items_tags import ItemTagModel
 from models.item import ItemModel
 from models.user import UserModel
 from models import UserModel
-from schemas import StoreSchema,TagSchema,TagAndItemSchema, UserSchema
+from schemas import StoreSchema,TagSchema,TagAndItemSchema, UserSchema, UserRegisterSchema
 
 blp = Blueprint("Users", __name__, description="Operations on users")
 
@@ -46,29 +47,50 @@ class User(MethodView):
     
 @blp.route("/register")
 class RegisterUser(MethodView):
-     @blp.arguments(UserSchema)
-     @blp.response(200, UserSchema)
+     @blp.arguments(UserRegisterSchema)
      def post(self,user_data):
-        if UserModel.query.filter(UserModel.username == user_data["username"]).first():
-            abort(409, message="A user with that name already exists.")
-        
-        user = UserModel(
-            username = user_data["username"],
-            password = pbkdf2_sha256.hash(user_data["password"])
-            
-        )
-        try:
-            db.session.add(user)
-            db.session.commit()
-        except IntegrityError:
-            abort(
-                400,
-                message="A user with that name already exists.",
+        if UserModel.query.filter(
+            or_(
+                UserModel.username == user_data["username"],
+                UserModel.email == user_data["email"],
             )
-        except SQLAlchemyError:
-            abort(500, message="An error occurred creating the user.")
+        ).first():
+            abort(409, message="A user with that username or email already exists.")
 
-        return user
+        user = UserModel(
+            username=user_data["username"],
+            email=user_data["email"],
+            password=pbkdf2_sha256.hash(user_data["password"]),
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        # queue.enqueue(send_user_registration_email, user.email, user.username)
+
+        return {"message": "User created successfully."}, 201
+        # if UserModel.query.filter(
+        #     or_(UserModel.username == user_data["username"], UserModel.email == user_data["email"])).first():
+        #     abort(409, message="A user with that name already exists.")
+        
+        # user = UserModel(
+        #     username = user_data["username"],
+        #     email = user_data["email"],
+        #     password = pbkdf2_sha256.hash(user_data["password"])
+            
+        # )
+        # try:
+        #     db.session.add(user)
+        #     db.session.commit()
+        #     send_simple_message(to=user.mail, subject="Successfully signed up!", body="Hi {}! You have successfully signed up the flask-api-python!".format(user.username))
+        # except IntegrityError:
+        #     abort(
+        #         400,
+        #         message="A user with that name already exists.",
+        #     )
+        # except SQLAlchemyError:
+        #     abort(500, message="An error occurred creating the user.")
+
+        # return user
      
 
 @blp.route("/login")   
