@@ -8,6 +8,7 @@ sqlalchemy
 passlib
 flask-migrate
 gunicorn
+requests
 psycopg2
 
 

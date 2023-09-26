@@ -1,3 +1,6 @@
+import requests
+import os
+from dotenv import load_dotenv
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
@@ -14,6 +17,19 @@ from models import UserModel
 from schemas import StoreSchema,TagSchema,TagAndItemSchema, UserSchema
 
 blp = Blueprint("Users", __name__, description="Operations on users")
+
+# load_dotenv()
+
+def send_simple_message(to,subject,body):
+    domain = os.getenv("MAILGUN_DOMAIN")
+    api_key = os.getenv("MAILGUN_API_KEY")
+    return requests.post(
+		"https://api.mailgun.net/v3/{}/messages".format(domain),
+		auth=("api", "{}".format(api_key)),
+		data={"from": "Excited User <mailgun@{}>".format(domain),
+			"to": [to],
+			"subject": subject,
+			"text": body})
 
 @blp.route("/users/<int:user_id>")
 class User(MethodView):
