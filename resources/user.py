@@ -1,5 +1,6 @@
 import requests
 import os
+from flask import current_app
 from sqlalchemy import or_
 from dotenv import load_dotenv
 from flask.views import MethodView
@@ -16,21 +17,9 @@ from models.item import ItemModel
 from models.user import UserModel
 from models import UserModel
 from schemas import StoreSchema,TagSchema,TagAndItemSchema, UserSchema, UserRegisterSchema
+from tasks import send_user_registration_email
 
 blp = Blueprint("Users", __name__, description="Operations on users")
-
-# load_dotenv()
-
-def send_simple_message(to,subject,body):
-    domain = os.getenv("MAILGUN_DOMAIN")
-    api_key = os.getenv("MAILGUN_API_KEY")
-    return requests.post(
-		"https://api.mailgun.net/v3/{}/messages".format(domain),
-		auth=("api", "{}".format(api_key)),
-		data={"from": "Excited User <mailgun@{}>".format(domain),
-			"to": [to],
-			"subject": subject,
-			"text": body})
 
 @blp.route("/users/<int:user_id>")
 class User(MethodView):
@@ -64,6 +53,7 @@ class RegisterUser(MethodView):
         )
         db.session.add(user)
         db.session.commit()
+        current_app.queue.enqueue(send_user_registration_email,user.email,user.username)
 
         # queue.enqueue(send_user_registration_email, user.email, user.username)
 
@@ -127,6 +117,7 @@ class UserRefreshToken(MethodView):
         jti = get_jwt()["jti"]
         BLOCKLIST.add(jti)
         return {"access_token":new_token}
+
 
 
 
